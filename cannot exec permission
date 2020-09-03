@@ -1,0 +1,84 @@
+docker exec -it mysql bash -c "mysql_upgrade -uroot -pdatabase"
+
+Warnings
+1. mysqld: Table 'mysql.plugin' doesn't exist
+2. Gtid table is not ready to be used. Table 'mysql.gtid_executed' cannot be opened.
+3. World-writable config file './auto.cnf' has been removed.
+4. Failed to initialize TLS for channel: mysql_main.
+5. Failed to set up SSL because of the following SSL library error: 
+    SSL context is not usable without certificate and private key
+6. RSA public key file not found: /var/lib/mysql//public_key.pem. 
+    Some authentication plugins will not work.
+
+7. [ERROR] [MY-013129] [Server] A message intended for a client cannot be sent there 
+    as no client-session is attached. Therefore, we're sending the information to the
+    error-log instead: MY-001146 - Table 'mysql.component' doesn't exist
+
+8. [ERROR] [MY-010326] [Server] Fatal error: Can't open and lock privilege tables: 
+    Table 'mysql.user' doesn't exist
+
+9. [ERROR] [MY-010952] [Server] The privilege system failed to initialize correctly. 
+    For complete instructions on how to upgrade MySQL to a new version 
+    please see the 'Upgrading MySQL' section from the MySQL manual.
+
+
+mysql is a database name
+mysql.user is a table in mysql database
+
+to identify privilege directory,
+you need to store something in user table
+
+mysql.plugin
+mysql.gtid_executed
+./auto.cnf config file
+mysql_main channel
+SSL library error: no cert and private key
+
+mysql.component table doesn't exist
+mysql.user table doesn't exist
+
+what tables are in the database called mysql
+database called mysql the whole thing might not exist
+at least what is needed
+
+
+Database changed
+mysql> SHOW TABLES;
++---------------------------+
+| Tables_in_mysql           |
++---------------------------+
+| columns_priv              |
+| component                 |
+| db                        |
+| default_roles             |
+| engine_cost               |
+| func                      |
+| general_log               |
+| global_grants             |
+| gtid_executed             |
+| help_category             |
+| help_keyword              |
+| help_relation             |
+| help_topic                |
+| innodb_index_stats        |
+| innodb_table_stats        |
+| password_history          |
+| plugin                    |
+| procs_priv                |
+| proxies_priv              |
+| role_edges                |
+| server_cost               |
+| servers                   |
+| slave_master_info         |
+| slave_relay_log_info      |
+| slave_worker_info         |
+| slow_log                  |
+| tables_priv               |
+| time_zone                 |
+| time_zone_leap_second     |
+| time_zone_name            |
+| time_zone_transition      |
+| time_zone_transition_type |
+| user                      |
++---------------------------+
+33 rows in set (0.00 sec)

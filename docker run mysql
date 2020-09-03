@@ -1,0 +1,131 @@
+docker pull mysql/mysql-server:latest
+
+docker run -detach --name=mysql2 --env="MYSQL_ROOT_PASSWORD=mypassword" mysql
+mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'database';
+
+#this mount point works, container running
+docker run \
+-detach \
+-it \
+--name=mysql2 \
+--env="MYSQL_ROOT_PASSWORD=database" \
+-v /home/pimpwhippa/data-test:/var/lib/mysql \
+mysql
+
+
+#/media is owned by root, but the dir mysql-data is owned by pimpwhippa
+docker run -detach -it --name=mysql2 --env="MYSQL_ROOT_PASSWORD=mypassword" -v /media/pimpwhippa/A8D85DB1D85D7E8E/storage/docker/mysql-data:/var/lib/mysql mysql
+
+CREATE DATABASE Netflix;
+USE Netflix;
+
+table columns from netflix_shows.csv
+show_id	type	title	director	cast	country	date_added	release_year	
+rating	duration	listed_in	description
+
+
+CREATE TABLE shows2 (
+            show_id INT NOT NULL AUTO_INCREMENT,
+            type VARCHAR(20) NOT NULL, 
+            title VARCHAR(200) NOT NULL,
+            director VARCHAR(100) NOT NULL, 
+            cast TEXT NOT NULL, 
+            country VARCHAR(30) NOT NULL,
+            date_added DATE NOT NULL, 
+            release_year SMALLINT NOT NULL, 
+            rating VARCHAR(20) NOT NULL,
+            duration VARCHAR(20) NOT NULL, 
+            listed_in VARCHAR(100) NOT NULL, 
+            description TEXT NOT NULL,
+            PRIMARY KEY (show_id)
+);
+
+CREATE TABLE shows3 (
+            show_id INT NOT NULL AUTO_INCREMENT,
+            type VARCHAR(20) NOT NULL, 
+            title VARCHAR(200) NOT NULL,
+            director VARCHAR(100) NOT NULL, 
+            cast TEXT NOT NULL, 
+            country VARCHAR(30) NOT NULL,
+            date_added DATE NOT NULL, 
+            release_year SMALLINT NOT NULL, 
+            rating VARCHAR(20) NOT NULL,
+            duration VARCHAR(20) NOT NULL, 
+            listed_in VARCHAR(100) NOT NULL, 
+            description TEXT NOT NULL,
+            PRIMARY KEY (show_id)
+);
+
+SHOW VARIABLES LIKE "secure_file_priv";
+
+mysql> SELECT @@GLOBAL.secure_file_priv;
+
+LOAD DATA INFILE '/Works/recommender/netflix_titles.csv'
+INTO TABLE shows
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '/n'
+IGNORE 1 ROWS;
+
+LOAD DATA LOCAL INFILE '/var/lib/mysql-files/netflix_titles.csv'
+INTO TABLE shows2 
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"' 
+LINES TERMINATED BY '/n' 
+IGNORE 1 ROWS;
+
+#this works because lines terminated by ,
+LOAD DATA LOCAL INFILE '/var/lib/mysql-files/netflix_titles.csv'
+INTO TABLE shows3
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"' 
+LINES TERMINATED BY ',' 
+IGNORE 1 ROWS;
+
+
+สร้าง database ให้เลยเวลา docker run mysql?
+ทุกสิ่งอยู่ใน cnf file? ว่าให้แก้แบบทั้งฝั่ง server-client permission
+ไว้ใน dockerfile ได้เลยไหม?
+แล้วจะให้เอา .csv ไว้ที่ไหน?
+
+
+docker run --name=mysql2 -d mysql/mysql-server:latest
+
+docker run \
+-detach \
+-it \
+--name=mysql2 \
+--env="MYSQL_ROOT_PASSWORD=database" \
+-v /home/pimpwhippa/data-test:/var/lib/mysql \
+mysql
+
+docker exec -it mysql2 mysql -uroot -p
+
+mysql> SET GLOBAL local_infile=1;
+
+docker exec -it mysql2 mysql --local-infile=1 -uroot -p
+
+#ก็อปไฟล์จากโฮสท์มาใส่ด็อกเก้อ
+docker cp /home/pimpwhippa/Works/recommender/netflix_titles.csv mysql2:/var/lib/mysql-files/netflix_titles.csv
+
+LOAD DATA LOCAL INFILE '/var/lib/mysql-files/netflix_titles.csv'
+INTO TABLE shows 
+
+Query OK, 6237 rows affected, 65535 warnings (0.25 sec)
+Records: 6237  Deleted: 0  Skipped: 0  Warnings: 74844
+
+mysqldump -h localhost -u [MySQL user, e.g. root] -p[database password] 
+-c --add-drop-table --add-locks --all --quick 
+--lock-tables [name of the database] > sqldump.sql
+
+shell> mysqldump --databases Netflix > dumpnetflix.sql
+
+docker exec -i mysql_container mysqldump -uroot -proot --databases database_name 
+--skip-comments > /path/to/my/dump.sql
+
+docker exec -i mysql2 mysqldump -uroot -pdatabase --databases Netflix > dump_netflix.sql
+--skip-comments > /dump_netflix.sql
+
+SELECT * FROM shows3\G #show table in terminal vertically each row
+
+SELECT * FROM shows3 WHERE director = 'Brad Anderson';
