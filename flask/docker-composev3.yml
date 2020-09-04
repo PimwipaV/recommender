@@ -1,0 +1,38 @@
+version: "3"
+services:
+
+  mysql:
+    image: mysql/mysql-server:latest
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - home/pimpwhippa/data-test:/var/lib/mysql-files/
+    networks:
+      - backend
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: Netflix
+      MYSQL_HOST: 127.0.0.1
+
+  test-junkie-hq:
+    depends_on:
+      - mysql
+    image: python-flask
+    ports:
+      - "80:5000"
+    networks:
+      - backend
+    environment:
+      TJ_MYSQL_PASSWORD: database
+      TJ_MYSQL_HOST: mysql
+      TJ_MYSQL_DATABASE: Netflix
+      TJ_MYSQL_PORT: 3306
+      TJ_APPLICATION_PORT: 5000
+      TJ_APPLICATION_HOST: 0.0.0.0
+
+networks:
+  backend:
+
+volumes:
+  home/pimpwhippa/data-test:

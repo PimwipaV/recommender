@@ -1,0 +1,8 @@
+FROM tiangolo/uwsgi-nginx:python3.6
+
+LABEL maintainer="pimpwhippa<utrechtmay@gmail.com>"
+
+RUN pip install flask
+
+COPY ./app /app
+WORKDIR /app

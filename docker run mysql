@@ -1,7 +1,12 @@
 docker pull mysql/mysql-server:latest
 
-docker run -detach --name=mysql2 --env="MYSQL_ROOT_PASSWORD=mypassword" mysql
+docker run -detach --name=mysql2 mysql -uroot -p
+enter AUTO GENERATED password
 mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'database';
+
+แล้วลบกล่องแล้วรันใหม่
+
+docker run -detach --name=mysql2 --env="MYSQL_ROOT_PASSWORD=database" mysql
 
 #this mount point works, container running
 docker run \
@@ -100,6 +105,7 @@ docker run \
 mysql
 
 docker exec -it mysql2 mysql -uroot -p
+enter password: database
 
 mysql> SET GLOBAL local_infile=1;
 
@@ -129,3 +135,5 @@ docker exec -i mysql2 mysqldump -uroot -pdatabase --databases Netflix > dump_net
 SELECT * FROM shows3\G #show table in terminal vertically each row
 
 SELECT * FROM shows3 WHERE director = 'Brad Anderson';
+
+docker exec -it mysql2 mysql -uroot -p

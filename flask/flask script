@@ -1,0 +1,14 @@
+docker build
+docker run -d -it --name=flask wsgi-nginx-flask:python3.6 sh
+standard_init_linux.go:211: exec user process caused "exec format error"
+touch entrypoint.sh
+touch start.sh
+
+ก็ยังไม่ได้อะไรขึ้นมา
+เจอไอ้นี่เข้าไปจบเลย
+docker run -d -it --name=flaskian tiangolo/uwsgi-nginx sh
+ไอ้นี่ ไม่มี flask เฉ๊ย สาสสส
+
+docker build -t wsgi-nginx-flask:python3.6 .
+
+docker build -t python-flask .
