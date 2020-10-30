@@ -2,7 +2,7 @@ FROM python:latest
 
 LABEL maintainer="pimpwhippa<utrechtmay@gmail.com>"
 
-WORKDIR /code
-COPY . /code
+WORKDIR /app
+ADD . /app
 RUN pip install -r requirements.txt
-CMD ["python3","app.py"]
+CMD ["python","app.py"]

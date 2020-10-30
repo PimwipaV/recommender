@@ -1,4 +1,4 @@
-docker build
+﻿docker build
 docker run -d -it --name=flask wsgi-nginx-flask:python3.6 sh
 standard_init_linux.go:211: exec user process caused "exec format error"
 touch entrypoint.sh
@@ -12,3 +12,269 @@ docker run -d -it --name=flaskian tiangolo/uwsgi-nginx sh
 docker build -t wsgi-nginx-flask:python3.6 .
 
 docker build -t python-flask .
+
+docker run -d -it --name=flaskbox -p 5001:5000 python-flask
+
+ต้องทำเป็น volume มาเม้าท์
+docker volume create mysql-data
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/data-test/mysql$ docker volume ls
+local               mysql-data
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/data-test/mysql$ docker volume inspect mysql-data
+[
+    {
+        "CreatedAt": "2020-09-07T00:13:31+03:00",
+        "Driver": "local",
+        "Labels": {},
+        "Mountpoint": "/var/lib/docker/volumes/mysql-data/_data",
+        "Name": "mysql-data",
+        "Options": {},
+        "Scope": "local"
+    }
+
+
+#แต่นี่อยู่ใน docker-compose นะ
+docker run -d \
+  --name flaskmysql \
+  -v mysql-data:var/lib/mysql \
+  mysql/mysql-server:latest
+
+
+191020
+กลับมาโปรเจ็คนี้หลังจากที่ย้อนกลับไป GroupTimeSeriesSplit มาเดือนกว่าแต่ learning curve สูงมาก
+คือการเขียนลูปในลูป และการจัดการแพคเกจเพื่อดิสทริบิวท์
+
+กลับมาแล้วยังต่อไม่ค่อยติด
+ในที่สุดก็ไล่มาจนเจอ docker-compose แล้วจ้า ไหนดูซิจะสั่งยังไง
+ใช้เวลาเป็นชั่วโมงกว่าจะคลำทางกลับมาเจอไฟล์ใน flask script นี่ แต่ชื่อก็ถูกอยู่
+
+volumes:
+- mysql-data:/var/lib/mysql
+มันอยู่ที่ไหนนะ ลบไปแล้วไม่ใช่เหรอ ตอนนี้โฟลเดอร์ชื่อ data-test อยู่ฝั่ง linux นี่นา
+สั่ง docker-compose up แล้วเปิด localhost:5000/ ได้
+
+201020
+เริ่มเขียน Mysql query ทันทีหลังจากที่ต่อ flask จากในคอนเทนเนอร์ได้และสั่ง docker-compose up โดยมี dbเสร็จเรียบร้อย
+แต่ลืมไปว่า db อันนั้นไม่ใช่อันที่โหลดดาต้าไว้แล้ว
+เลยต้องมาดูใหม่ว่าจะโหลดดาต้าลงไปใน Mysql ที่สั่งรันด้วย docker-compose ยังไง
+ก็จะไปเรียกไฟล์ดูเล่นๆ แต่ปรากฏว่าไม่มี nano และไม่มี apt-get ด้วย ถ้าจะให้มีต้องไปเขียนใน Dockerfile ใหม่ว่า
+RUN apt-get update
+
+สรุปต้องใช้ Dockerfile อยู่ดี จะเขียนแค่ docker-compose ไม่พอ
+
+วิธีต่อดาต้าเบสเข้ากับ flask ใน docker
+
+1. คือจะdocker-compose ให้ขึ้นมาก่อน แล้วไปโหลดดาต้าใส่ที่หลัง ก็ต้องหาทางเช็คสถานะว่าโหลดเรียบร้อยไหม พร้อมให้ query ไหม แต่ว่าด้วยวิธี docker-composeนี้ จะ exec เข้าไปใน flask_mysql_1ไม่ได้ เพราะติด 
+ERROR 1130 (HY000): Host '127.0.0.1' is not allowed to connect to this MySQL server
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker exec -it flask_mysql_1 mysql -uroot -pdatabase
+แต่ไม่ควรใส่ password (database) ลงไปใน cli มันอันตราย จริงๆใส่แค่ -p ก็พอแล้วมันจะพร้อมท์ให้ใส่พาสเวิร์ดเอง
+
+จะแก้ error 1130 ต้องไปแก้ในไฟล์ my.ini ประมาณว่าเป็น cnf config file ของ mysql แต่ยังไม่รู้จะแก้ยังไง
+
+2. คือสร้าง mysql container มาด้วย Dockerfile แล้วค่อยเอามาต่อกัน ด้วย –link หรืออะไรแบบนั้น หรือจะเอามาใส่ compose ทีหลังก็ได้เหมือนกัน ซึ่งตอนนี้มี container นั้นอยู่แล้ว ก็อาจจะต้องลองวิธีนี้
+
+
+มันต้อง compose ได้สิวะ
+
+ลองสร้าง mysql container ขึ้นมาใหม่ dump data เข้าไป ก็เปิดได้ปกติ
+ลองรันด้วย compose dump data ได้ แต่ exec ไม่ได้อยู่ดี
+แสดงว่าอยู่ที่ permission ของ compose
+ต้อง grant user สำหรับ mysql container ให้ได้ก่อนที่จะรัน
+อาจจะอยู่ใน command:
+docker-compose up -d
+# Give some time for mysql to get up
+sleep 20
+docker-compose exec mysql mysql -uroot -proot test <dummy1.sql
+
+mysql:
+   image: mysql:latest
+    environment:
+     - MYSQL_ROOT_PASSWORD=root
+     - MYSQL_DATABASE=test
+
+     ports:
+      - "3306:3306"
+   mysqlinit:
+     image: mysql:latest
+     volumes:
+       - ./dummy1.sql:/dump/dummy1.sql
+     command: bash -c "sleep 20 && mysql -h mysql -uroot -proot test < /dump/dummy1.sql"
+mysql -h localhost -P 3306 --protocol=tcp -uroot -p
+
+mysql> CREATE USER 'pimp'@'%' IDENTIFIED BY 'some_pass';
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'pimp'@'%'
+    ->     WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+
+
+ippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker exec -it mysqlready mysql -uroot -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 8
+Server version: 8.0.21 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> CREATE USER 'pimp'@'%' IDENTIFIED BY 'some_pass';
+Query OK, 0 rows affected (0.06 sec)
+
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'pimp'@'%'
+    -> WITH GRANT OPTION;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> exit
+Bye
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker stop mysqlready
+mysqlready
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker-compose up
+WARNING: Found orphan containers (flask_flask_app_1, flask_mysql_1) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up.
+Recreating flask_db_1 ... done
+Recreating flask_flask_1 ... done
+Attaching to flask_db_1, flask_flask_1
+db_1     | [Entrypoint] MySQL Docker Image 8.0.21-1.1.17
+db_1     | 2020-10-23T21:26:05.510853Z 0 [ERROR] [MY-000068] [Server] unknown option '--remove-orphans'.
+db_1     | 2020-10-23T21:26:05.510992Z 0 [ERROR] [MY-010119] [Server] Aborting
+db_1     | [Entrypoint] ERROR: Unable to start MySQL. Please check your configuration.
+db_1     | [Entrypoint] 
+flask_db_1 exited with code 1
+flask_1  |  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+flask_1  |  * Restarting with stat
+flask_1  |  * Debugger is active!
+flask_1  |  * Debugger PIN: 151-401-641
+^CGracefully stopping... (press Ctrl+C again to force)
+Stopping flask_flask_1   ... done
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker-compose up --remove-orphan
+Removing orphan container "flask_flask_app_1"
+Removing orphan container "flask_mysql_1"
+Recreating flask_db_1 ... done
+Recreating flask_flask_1 ... done
+Attaching to flask_db_1, flask_flask_1
+db_1     | [Entrypoint] MySQL Docker Image 8.0.21-1.1.17
+db_1     | [Entrypoint] Starting MySQL 8.0.21-1.1.17
+db_1     | 2020-10-23T21:30:51.644523Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.21) starting as process 22
+db_1     | 2020-10-23T21:30:51.973406Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+db_1     | 2020-10-23T21:30:53.315313Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+db_1     | 2020-10-23T21:30:53.806201Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+db_1     | 2020-10-23T21:30:53.871036Z 0 [System] [MY-010229] [Server] Starting XA crash recovery…
+
+
+
+need to put password in secret, not on cli
+touch uwsgi.ini
+to do touch-reload don’t have to delete and rebuild containers
+
+docker exec -it flask_mysql_1 mysql -uroot -pdatabase -D Netflix -e "SELECT * FROM shows3;
+
+
+โอ้ย 
+คือตอ้งไล่เช็คไปทุกบรรทัดเลย
+1.ดูว่าโหลด netflix_dump3.sql ถูกหรือเปล่า
+2.ทำไม exec ไม่ได้ ทำไม 127.0.0.1 is not allowed
+3.ใช้ SQL connector ถูกหรืเปล่า
+pymysql
+MySQLdb
+flask-mysql
+ไม่รู้อันไหนเป็นอันไหน
+4.และสุดท้าย อยากรู้ว่า render template ได้ถูกต้องไหม
+ต้องไล่เช็คไปทีละอย่างเหรอเนี่ย
+
+docker exec -it flask_mysql_1 bash -c "export TERM=xterm; exec bash"
+
+in mysqlready where I did
+cat ../../../mysql-dump/dump_netflix.sql | docker exec -i mysqlready /usr/bin/mysql -uroot –password=database
+
+the data persisted
+
+but when I tried to go see what’s inside
+bash-4.2# cd docker-entrypoint-initdb.d/
+there’s no file call init.sql
+
+but if in docker-compose I tried the same, there’s the file
+but I cannot nano it. So I cannot see what’s inside
+maybe there’s no database in there at all??
+
+in bind mount mysql-dump, there’re 2 files dump_netflix.sql and dump_netflix3.sql, but I don’t know if any of these got into the container for real
+the container is ready for connections (according to docker-compose up) but I don’t know what’s in there. How can I check?
+
+Cannot exec 127.0.0.1 is not allowed
+cannot nano to see inside
+
+now can exec!
+MYSQL_HOST: 127.0.0.1 #<-- change to localhost and then i can exec after docker-compose
+https://stackoverflow.com/questions/55165660/host-is-not-allowed-to-connect-to-this-mysql-server-from-vm
+ติดมาตั้งหลายวัน!
+271020
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker exec -it recommender_mysql_1 mysql -uroot -p
+
+version: "3.8"
+services:
+
+mysql:
+image: mysql/mysql-server:latest
+command: --default-authentication-plugin=mysql_native_password
+ports:
+- "3306:3306"
+volumes:
+- data-test:/var/lib/mysql
+- mysql-dump:/docker-entrypoint-initdb.d/init.sql
+environment:
+MYSQL_ROOT_PASSWORD: database
+MYSQL_DATABASE: Netflix
+MYSQL_HOST: 127.0.0.1 #<-- change to localhost and then i can exec after docker-compose up
+
+ในcontainer ไม่มีดาต้าจริงๆด้วย เจอตั้งแต่ข้อแรกเลย
+mysql> USE Netflix
+Database changed
+mysql> show tables;
+Empty set (0.04 sec)
+
+
+docker-compose rm
+ต้องใช้ docker-compose.yml ด้วยว่ะ
+
+
+For restoring data. You can use docker exec command with -i flag, similar to the following:
+
+$ docker exec -i some-mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < /some/path/on/your/host/all-databases.sql
+
+#use this to check if dumping works
+docker exec -i flask_mysql_1 sh -c 'exec mysql -uroot -p"database"' < /mysql-dump/dump_netflix3.sql
+
+สุดท้ายที่ dump.sql ใส่ลงไปในคอนเทนเนอร์ไม่ได้เพราะว่า ใส่ path ตอน create volume เอามาbind ผิดอีกแล้วครับทั่น
+
+และต้อง docker-compose stop, docker-compose rm, docker volume ls, docker volume prune, ออกให้เกลี้ยงก่อน ไม่งั้นมันไม่ initialize database ใหม่ ที่แก้ไปใน docker-compose.yml ก็ไม่เกิดผลอะไร
+
+แต่ก็ยังไม่ display ด้วย flask_flask_app_1 ไม่ได้อยู่ดี มีปัญหากับ volume นี่แหละ
+ตอนนี้ exec เข้าไปดู shows3 ได้แล้ว คือ dump_netflix3.sql ใส่ไปใน คอนเทนเนอร์ได้แล้ว
+ไปเช็คก่อนไหมว่า ที่สั่ง render template มัน
+
+docker-compose mysql server who is allowed to connect
+
+why docker-entrypoiont initdb doesn't initiate sql dump
+
+import dump.sql does the table comes in automatically docker
+
+connect flask container to mysql container
+
+docker compose
+
+ERROR 1130 (HY000): Host '127.0.0.1' is not allowed to connect to this MySQL server
+load data into mysql started with docker-compose
+
+In mathematics (in particular, functional analysis), convolution is a mathematical operation on two functions (f and g) that produces a third function ( ) that expresses how the shape of one is modified by the other. The term convolution refers to both the result function and to the process of computing it.
+
+docker-compose how to check if mysql-dump is succesful
+
+render mysql query flask
+

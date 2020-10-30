@@ -1,0 +1,179 @@
+version: "3.8"
+services:
+
+  mysql:
+    image: mysql/mysql-server:latest
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: Netflix
+      MYSQL_HOST: 127.0.0.1
+
+
+  flask_app:
+    depends_on:
+      - mysql
+    image: python-flask
+    ports:
+      - "5000:5000"
+    environment:
+      TJ_MYSQL_PASSWORD: database
+      TJ_MYSQL_HOST: mysql
+      TJ_MYSQL_DATABASE: Netflix
+      TJ_MYSQL_PORT: 3306
+      TJ_APPLICATION_PORT: 5000
+      TJ_APPLICATION_HOST: 0.0.0.0
+
+volumes: 
+  mysql-data:
+
+
+
+
+version: "3.8"
+services:
+
+  mysql:
+    image: mysql/mysql-server:latest
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - data-test:/var/lib/mysql
+      - mysql-dump:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: Netflix
+      MYSQL_HOST: 127.0.0.1 #<-- change to localhost and then i can exec after docker-compose
+
+  flask_app:
+    depends_on:
+      - mysql
+    image: python-flask
+    ports:
+      - "5000:5000"
+    environment:
+      TJ_MYSQL_PASSWORD: database
+      TJ_MYSQL_HOST: mysql
+      TJ_MYSQL_DATABASE: Netflix
+      TJ_MYSQL_PORT: 3306
+      TJ_APPLICATION_PORT: 5000
+      TJ_APPLICATION_HOST: 0.0.0.0
+
+volumes: 
+  data-test:
+  mysql-dump:
+
+
+  WARNING: Found orphan containers (flask_mysql_1, flask_flask_app_1) for this project. 
+If you removed or renamed this service in your compose file, 
+you can run this command with the --remove-orphans flag to clean it up.
+
+
+#this doesn't work
+version: "3.8"
+   
+services:
+  db:
+    image: mysql/mysql-server:latest
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-dump:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: Netflix
+      MYSQL_HOST: 127.0.0.1
+
+
+  flask:
+    depends_on:
+      - db
+    image: python-flask
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    environment:
+      TJ_MYSQL_PASSWORD: database
+      TJ_MYSQL_HOST: mysql
+      TJ_MYSQL_DATABASE: Netflix
+      TJ_MYSQL_PORT: 3306
+      TJ_APPLICATION_PORT: 5000
+      TJ_APPLICATION_HOST: 0.0.0.0
+
+volumes: 
+  mysql-dump:
+
+
+healthcheck:
+      test: ["CMD-SHELL", 'mysql --database=$$MYSQL_DATABASE --password=$$MYSQL_ROOT_PASSWORD --execute="SELECT count(table_name) > 0 FROM information_schema.tables;" --skip-column-names -B']
+      interval: 30s
+      timeout: 10s
+      retries: 4
+    extends:
+        file: docker-compose-common-config.yml
+        service: common_service
+
+version: "3"
+
+services:
+  db:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - data-test:/var/lib/mysql
+      - mysql-dump:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 3306:3306
+
+volumes: 
+  data-test:
+  mysql-dump:
+
+#command: mysqld --init-file="/tmp/mysql-dump/dump_netflix3.sql"
+#docker exec -i some-mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < /some/path/on/your/host/all-databases.sql
+
+#this works start up containers with dump.sql inside
+version: "3.8"
+services:
+
+  mysql:
+    image: mysql/mysql-server:latest
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ../../../mysql-dump:/docker-entrypoint-initdb.d/dump_netflix3.sql
+      - ../../../data-test:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: Netflix
+      MYSQL_HOST: localhost 
+
+  flask_app:
+    depends_on:
+      - mysql
+    image: python-flask
+    ports:
+      - "5000:5000"
+    environment:
+      TJ_MYSQL_PASSWORD: database
+      TJ_MYSQL_HOST: mysql
+      TJ_MYSQL_DATABASE: Netflix
+      TJ_MYSQL_PORT: 3306
+      TJ_APPLICATION_PORT: 5000
+      TJ_APPLICATION_HOST: 0.0.0.0
+
+volumes: 
+  data-test:
+  mysql-dump:

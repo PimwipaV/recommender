@@ -137,3 +137,39 @@ SELECT * FROM shows3\G #show table in terminal vertically each row
 SELECT * FROM shows3 WHERE director = 'Brad Anderson';
 
 docker exec -it mysql2 mysql -uroot -p
+
+
+docker run --name mysqlready -v mysql-dump:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=database -d mysql/mysql-server:latest
+#cat dump_netflix.sql | docker exec -it mysqlready /usr/bin/mysql -u root -p
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+cat ../../../mysql-dump/dump_netflix.sql | docker exec -i mysqlready /usr/bin/mysql -uroot --password=database
+
+successfully loaded restore the database
+but my database dump was only up to show2! :P :D
+
+สรุปคือบรรทัดนี้ใน docker-compose.yml
+    volumes:
+      - ../../../mysql-dump:/docker-entrypoint-initdb.d/dump_netflix3.sql
+
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker-compose run flask_app python app.py
+เลยรู้เลยว่า app.py ที่ได้รับการรันนั้นมันเก่ามาก
+
+ไม่ได้อัพเดท volume ที่ mnt ไว้เลย จากไฟล์นี้ที่ไปอยู่ในคอนเทนเนอร์
+ไฟล์ app.py อันนั้นเก่ามาก และไม่ใช่ location อันปัจจุบันที่เราอีดิท
+แต่ไม่ได้อัพเดท volume ที่เอาไปผูกไว้อัตโนมัติ
+ต้องbind หรือ mnt แบบใหม่ อะไรนะ
+:/code to make sure docker gets the change
+จำไม่ได้ด้วยซ้ำว่าใช้ไฟล์นี้ตอนไหนวะ เอามา build ก่อนจะ docker-compose up ด้วยเหรอ
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker-compose --rmi python-flask
+#remove original image
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker-compose up --build
+
+
+

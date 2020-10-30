@@ -1,8 +1,6 @@
-from flask import Flask, render_template
-from flask import Flask, request, jsonify, Response
-import json
-import mysql.connector
-from flask_cors import CORS, cross_origin
+from flask import Flask, request, render_template
+import pymysql
+#from flask_mysqldb import MySQL
 
 app = Flask(__name__)
 
@@ -10,30 +8,27 @@ app = Flask(__name__)
 def hello_world():
     return render_template('index.html')
 
-@app.route("/")
-def hello():
-    return "Flask inside Docker!!"
+@app.route('/form')
+def form():
+    return render_template('form.html')
 
-def getMysqlConnection():
-    #return mysql.connector.connect(user='testing', host='0.0.0.0', port='3306', password='testing', database='test')
-    return mysql.connector.connect(user='root', host='mysql2', port='3306', password='database', database='Netflix')
+db = pymysql.connect("mysql", "root", "database", "Netflix")
+#mysql = MySQL(app)
+#app.config['MYSQL_HOST'] = 'localhost'
+#app.config['MYSQL_USER'] = 'root'
+#app.config['MYSQL_PASSWORD'] = 'database'
+#app.config['MYSQL_DB'] = 'mysql'
+ 
+@app.route('/mysql', methods=['GET'])
+def someName():
+    #cursor = mysql.connection.cursor()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM shows3 WHERE director = 'Brad Anderson';")
+    results = cursor.fetchall()
+    cursor.close()
+    #return render_template('index2.html', results=results[0])
+    return render_template('index2.html', results=results)
 
-@app.route('/api/getMonths', methods=['GET'])
-@cross_origin() # allow all origins all methods.
-def get_months():
-    db = getMysqlConnection()
-    print(db)
-    try:
-        sqlstr = "SELECT * FROM shows3 WHERE director = 'Brad Anderson';"
-        print(sqlstr)
-        cur = db.cursor()
-        cur.execute(sqlstr)
-        output_json = cur.fetchall()
-    except Exception as e:
-        print("Error in SQL:\n", e)
-    finally:
-        db.close()
-    return jsonify(results=output_json)
-    
+
 if __name__ == '__main__':
-    app.run(debug=True,host='0.0.0.0')
+    app.run(debug=True)
