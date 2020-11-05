@@ -1,6 +1,5 @@
 from flask import Flask, request, render_template
 import pymysql
-#from flask_mysqldb import MySQL
 
 app = Flask(__name__)
 
@@ -12,13 +11,13 @@ def hello_world():
 def form():
     return render_template('form.html')
 
-db = pymysql.connect("mysql", "root", "database", "Netflix")
-#mysql = MySQL(app)
-#app.config['MYSQL_HOST'] = 'localhost'
-#app.config['MYSQL_USER'] = 'root'
-#app.config['MYSQL_PASSWORD'] = 'database'
-#app.config['MYSQL_DB'] = 'mysql'
- 
+#db = pymysql.connect("mysql", "root", "database", "Netflix")
+#pymysql.connect(db='base', user='root', passwd='pwd', unix_socket="/tmp/mysql.sock")
+#db = pymysql.connect(host='flask_mysql_1', user='root', passwd='database', port=3306) 
+#db = pymysql.connect(db= 'mysql', host='f2924b8102e9', user='root', passwd='database', port=3306) 
+db = pymysql.connect(db= 'mysql', host='flask_mysql_1', user='root', passwd='database', port=3306) 
+
+
 @app.route('/mysql', methods=['GET'])
 def someName():
     #cursor = mysql.connection.cursor()
@@ -29,6 +28,5 @@ def someName():
     #return render_template('index2.html', results=results[0])
     return render_template('index2.html', results=results)
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
