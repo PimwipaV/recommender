@@ -177,3 +177,18 @@ services:
 volumes: 
   data-test:
   mysql-dump:
+
+
+#below is to tell flask to wait for mysql to be ready for connections before connecting
+app:
+    build: ./
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+    command: bash -c "/usr/local/bin/wait.sh && /usr/local/bin/start.sh"
+    volumes:
+      - ./start.sh:/usr/local/bin/start.sh
+      - ./wait.sh:/usr/local/bin/wait.sh
+
+    command: bash -c "chmod +x /usr/local/bin/wait.sh /usr/local/bin/start.sh && /usr/local/bin/wait.sh && /usr/local/bin/start.sh"

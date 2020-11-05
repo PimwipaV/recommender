@@ -181,7 +181,8 @@ docker exec -it flask_mysql_1 mysql -uroot -pdatabase -D Netflix -e "SELECT * FR
 2.ทำไม exec ไม่ได้ ทำไม 127.0.0.1 is not allowed
 3.ใช้ SQL connector ถูกหรืเปล่า
 pymysql
-MySQLdb
+MySQLdb flask-mysqldb only supports python2.7
+สุดท้ายอาจต้องไปลอองใช้ sqlalchemy
 flask-mysql
 ไม่รู้อันไหนเป็นอันไหน
 4.และสุดท้าย อยากรู้ว่า render template ได้ถูกต้องไหม
@@ -257,6 +258,8 @@ docker exec -i flask_mysql_1 sh -c 'exec mysql -uroot -p"database"' < /mysql-dum
 
 แต่ก็ยังไม่ display ด้วย flask_flask_app_1 ไม่ได้อยู่ดี มีปัญหากับ volume นี่แหละ
 ตอนนี้ exec เข้าไปดู shows3 ได้แล้ว คือ dump_netflix3.sql ใส่ไปใน คอนเทนเนอร์ได้แล้ว
+ด้วยการเปลี่ยน 127.0.0.1 เป็น localhost ใน docker-compose นั่นแหละ
+
 ไปเช็คก่อนไหมว่า ที่สั่ง render template มัน
 
 docker-compose mysql server who is allowed to connect
@@ -276,5 +279,271 @@ In mathematics (in particular, functional analysis), convolution is a mathematic
 
 docker-compose how to check if mysql-dump is succesful
 
-render mysql query flask
+ก็ต้อง exec เข้าไปเรียกคำสั่ง mysql ดูให้เห็น show tables;
+ตอนนี้เรียกได้แล้ว ก็มาไล่ดูว่า app.py มันทำงานได้หรือเปล่า จะเอา flask มาต่อกับ mysql ที่ load data แล้ว ยังไง
+ก็ต้องเอามาต่อกัน จะใช้ flask-mysqldb, MySQL-python, PyMySQL, หรือ SQLAlchemy ตอนนี้เดินทางมาถึง PyMySQL แล้ว ยังต่อไม่ได้
+ต้องสั่ง cur = pymysql.connect(host, password, database_name, port, etc.)
+นึกว่าต้องรอให้ mysql ready for connection ก่อน แต่ลองแล้วโดยการให้ flask_app_1 restart on-failure ก็ยังเจอ ConnectionRefusedError อยู่ดี
+
+ต้องไปดูเรื่อง socket อะไรอีกเนี่ย
+
+ต้องไป docker image prune อะไรประมาณนี้ ตอนนี้มันเยอะไปหมด
+เป้าหมายคือ
+
+render mysql query ผ่านflask
+
+push ไปที่ my github repo แล้ว
+จริงๆควร update cv ได้เลยจะได้สมัครงานด้วย project นี้เลย
+
+
+flask_app_1  |     db = pymysql.connect(db='mysql', user='root', passwd='database', unix_socket = "var/lib/mysql/mysql.sock")
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([Errno 2] No such file or directory)")
+mysql_1      | 2020-11-01T20:43:30.854620Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+
+mysql_1      | 2020-11-01T20:43:31.168520Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.21'  socket: '/var/lib/mysql/mysql.sock'  port: 3306  MySQL Community Server – GPL.
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker inspect flask_mysql_1 | grep Gateway
+            "Gateway": "",
+            "IPv6Gateway": "",
+                    "Gateway": "172.25.0.1",
+
+what do they mean?
+
+localhost
+127.0.0.1
+
+socket = port+IP address
+TCP/IP
+
+IP
+port
+bind address
+host
+
+TCP
+UDP
+
+
+what I can try today
+021120
+
+in docker-compose
+HOST: 172.25.0.1:3306 or 33060?
+
+or
+version: '3'
+services:
+  web-app:
+    build:
+      context: .
+      dockerfile: web-app/Dockerfile
+    ports:
+       - 8080:8080
+    network_mode: "host"
+network_mode: “host”
+
+That IP address will change whenever the container gets recreated; I'd recommend never looking up or using the container-internal IP addresses. The host name approach is much more reliable. – David Maze Feb 27 '19 at 11:07 
+    • That right, host name by container name is the right way. And thay how docker-compose use – Truong Dang Feb 27 '19 at 13:54 
+
+By default Compose sets up a single network for your app. Each container for a service joins the default network and 
+is both reachable by other containers on that network, 
+and discoverable by them at a hostname identical to the container name. flask_mysql_1
+
+
+Each container can now look up 
+the hostname web or db .  mysql
+and get back the appropriate container’s IP address. 
+For example, web’s application code could connect to the URL postgres://db:5432 mysql://mysql:3306 and start using the Postgres database.
+
+version: "3.8"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+  db:
+    image: postgres
+    ports:
+      - "8001:5432"
+
+It is important to note the distinction between HOST_PORT and CONTAINER_PORT. 
+In the above example, for db, the HOST_PORT is 8001 
+and the  CONTAINER_PORT is 5432 (postgres default). 
+Networked service-to-service communication uses the CONTAINER_PORT. 3306
+When HOST_PORT is defined, the service is accessible outside the swarm as well.
+
+
+
+Links allow you to define extra aliases by which a service is reachable from another service. 
+They are not required to enable services to communicate - by default, 
+any service can reach any other service at that service’s name. mysql
+In the following example, db is reachable from web at the hostnames db and database:
+
+version: "3"
+services:
+
+  web:
+    build: .
+    links:
+      - "db:database"
+  db:
+    image: postgres
+เอา database มาจากไหนวะ
+
+docker network ls
+NETWORK ID          NAME                  DRIVER              SCOPE
+13ed315269fd        bridge                bridge              local
+b77e108e4b77        flask_default         bridge              local
+f9c92e4ef7d3        host                  host                local
+ea7bb9cf5bda        none                  null                local
+08a1358a964a        recommender_default   bridge              local
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker
+
+
+db = pymysql.connect(db='mysql', user='root', passwd='database', host= 'localhost:3306')
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost:3306' ([Errno -2] Name or service not known)")
+
+db = pymysql.connect(db='mysql', user='root', passwd='database', host= 'flask_mysql_1')
+
+flask_app_1  | pymysql.err.OperationalError: (1130, "172.26.0.3' is not allowed to connect to this MySQL server")
+
+
+db = pymysql.connect(db='mysql', user='root', passwd='database', port=3306) 
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([Errno 99] Cannot assign requested address)")
+
+db = pymysql.connect(db='mysql', user='root', passwd='database', host='127.0.0.1:3306') 
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on '127.0.0.1:3306' ([Errno -2] Name or service not known)")
+
+
+db = pymysql.connect(db='mysql', user='root', passwd='database', host= 'mysql') 
+
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'mysql' ([Errno 111] Connection refused)")
+
+db = pymysql.connect(host='flask_mysql_1', user='root', passwd='database', port=3306) 
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'flask_mysql_1' ([Errno 111] Connection refused)")
+
+docker network list
+NETWORK ID          NAME                  DRIVER              SCOPE
+13ed315269fd        bridge                bridge              local
+57c8cebfb855        flask_default         bridge              local
+f9c92e4ef7d3        host                  host                local
+ea7bb9cf5bda        none                  null                local
+08a1358a964a        recommender_default   bridge              local
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ docker network inspect 57c8cebfb855
+
+"ConfigOnly": false,
+        "Containers": {
+            "52d8d9d3ffab1c3b38a3c1e121f22aa6933c27ab042844ec329f100df23e6fe4": {
+                "Name": "flask_mysql_1",
+                "EndpointID": "5c5b40067f63494d60f5218e5d67bb2d72b5dbef5428ef3d02d3b9d425c5256b",
+                "MacAddress": "02:42:c0:a8:10:02",
+                "IPv4Address": "192.168.16.2/20",
+                "IPv6Address": ""
+
+                
+
+"IPv4Address": "192.168.16.2/20",
+
+                    "Gateway": "172.25.0.1",
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on '0.0.0.0:3306' ([Errno 2] No such file or directory)")
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on '127.0.0.1:3306' ([Errno 2] No such file or directory)")
+
+
+ทั้งสอง service ดาต้าเบส และ แอพ อยู่บนเน็ตเวิร์คเดียวกัน ที่ชื่อ flask_default
+Creating network "flask_default" with the default driver
+
+แต่ MySQL server มันอยู่่ที่ไหน
+"Can't connect to MySQL server on ที่ไหนก็ไม่ได้ทั้งงนั้นแหละ
+
+ถ้าตามใน docker-compose.yml
+mysql:
+	environment:
+		MySQL_HOST MYSQL_HOST: localhost 
+flask_app:
+	environment:
+		TJ_MYSQL_HOST: mysql 
+
+ฉะนั้น จะบอก flask_app ให้ไปหาดาต้าเบสที่ไหน ก็ต้องที่ localhost สิวะ
+
+flask_app_1  |     db = pymysql.connect(db= 'mysql', host='192.168.32.1', user='root', passwd='database') 
+flask_app_1  | pymysql.err.OperationalError: (2013, 'Lost connection to MySQL server during query')
+
+
+flask_app_1  |     db = pymysql.connect(db= 'mysql', host='localhost', user='root', passwd='database', port=3306) 
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([Errno 99] Cannot assign requested address)")
+
+
+แม่งเอา container_ID
+
+mysql> SHOW VARIABLES WHERE Variable_name = 'hostname';
++---------------+--------------+
+| Variable_name | Value        |
++---------------+--------------+
+| hostname      | f2924b8102e9 |
++---------------+--------------+
+
+flask_app_1  |     db = pymysql.connect(db= 'mysql', host='f2924b8102e9', user='root', passwd='database', port=3306) 
+
+เสร็จแล้วตอบมาเป็น Gateway
+
+flask_app_1  | pymysql.err.OperationalError: (1130, "192.168.32.3' is not allowed to connect to this MySQL server")
+
+ก็ใช่น่ะสิ เพราะมีแต่ localhost เท่านั้นที่เข้าได้ แล้วใครจะไป grant permission ให้พี่ทุกครั้งที่สร้าง container ใหม่
+
+how to let mysql grant permission to user on host connecting from the same network
+
+เอาไงต่อ จะลองไป sqlalchemy เลยไหม หรือจะดื้อหาวิธีต่อด้วย pymysql ให้ได้ นี่มันก็จวนแล้วนะ
+
+ถ้า sqlalachemy แม่งสั่ง create table เลย แล้วค่อยเข้าไป ยังไม่เจอแบบที่ dump มา
+
+เราจะสั่งให้มันต่อที่ host = ‘flask_mysql_1’ ถ้าต่อได้แต่บอกว่า Gateway IP เข้าไม่ได้ ก็ต้องไป grant permission ให้ทุก user@flask_mysql_1 เข้าได้
+
+ปรากฏว่ากลับมาได้ connectionRefused อีกแล้ว
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'flask_mysql_1' ([Errno 111] Connection refused)")
+
+
+docker-compose mysql server who is allowed to connect
+why docker-entrypoiont initdb doesn't initiate sql dump
+
+https://github.com/docker-library/mariadb/issues/62
+import dump.sql does the table comes in automatically docker
+
+why changes in app.py is not reflected when docker-compose run
+flask update code app.py volumes
+python mysql binding
+tell flask to wait until mysql is ready for connections
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'mysql' ([Errno 111] Connection refused)")
+
+flask_app_1  | ConnectionRefusedError: [Errno 111] Connection refused
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([Errno 99] Cannot assign requested address)")
+
+localhost vs 127.0.0.1
+bind address vs socket TCP/IP
+connectivity mysql web service docker
+172.25.x.x
+mysql unix socket vs tcp/ip
+networking docker
+OSI layer
+pymysql.connect()
+
+can connect but now RuntimeError
+flask_app_1  | RuntimeError: 'cryptography' package is required for sha256_password or caching_sha2_password auth methods.
+
+สรุปว่า ต่อเข้าจาก flask ไปใน mysql ได้แล้ว คือคอนเนค แต่ว่ายังใส่พาสเวิร์ดไม่ได้
+จากเดิมที่ต่อไม่เข้าสักที เพราะหา hostname ไม่เจอ คือใส่เลขอะไรไปก็ไม่ได้ 172.25.0.1: 3306 อะไรเนี่ย localhost ก็ไม่ได้ สรุปที่ได้คือ ชื่อ container, container_ID แต่พอ resolve ออกมาเป็น IP address 192.168.16.2 แล้วmysql ก็ยังไม่ให้เข้าเพราะว่าไม่มี privilege ก็เลยต้องเข้าไปใน mysql แล้วสั่ง grant privileges to user ‘pimp’@% ไอ้เครื่องหมายเปอร์เซ็นนี่คือจะบอกว่า เข้ามาจาก IP ไหนก็ได้ ก็สรุปว่าอนุญาตให้เข้าได้แต่เข้าไปแล้วพาสเวิร์ดผิดอยู่ดี
+บางทีก็เข้าไม่ได้ ถ้า connection refused แปลว่า mysql ยังเตรียมตัวไม่เสร็จ ไม่พร้อมสำหรับ connection ก็เลยไปสั่งใน docker-compose บอกให้ flask restart on-failure คือลองไปเรื่อยๆจนกว่าจะไม่เกิด error ซึ่งการให้ restart on-failure นี่ง่ายกว่าการไปเขียนสคริปท์บอกให้ flask รอเป็นไหนๆ การแก้ปัญหานี้ก็กว่าจะเข้าใจก็นานเหมือนกัน
+คือมีปัญหาหลายอย่างที่ทำให้ต่อไม่ได้ ไม่รู้จัก hostname อะไรอย่างนั้นอีก ก็ใช้เวลางมพอสมควร
+
+ทีนี้มาติดพาสเวิร์ดอีก แต่คิดว่า ไม่เอาแล้ว ลองย้ายไป sqlalchemy ดีกว่า ดูเหมือนจะออกแบบมาให้ใช้งาน database ง่ายกว่าเพราะเป็นคน create table เองแล้วก็เขียน class ในการเอามันมาใช้เองน่าจะคล่องตัวกว่า
 

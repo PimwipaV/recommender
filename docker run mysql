@@ -166,10 +166,84 @@ docker-compose run flask_app python app.py
 
 pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
 docker-compose --rmi python-flask
-#remove original image
+#remove original image or docker-compose down -->remove network default
 
 pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
 docker-compose up --build
+#force rebuild of image to update mount volume
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker container exec -it flask_mysql_1 mysqladmin ping -P 3306 -uroot -p
+Enter password: 
+mysqld is alive
+#check that mysql service is ready for connection
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker container exec -it flask_mysql_1 mysqladmin ping -P 3306 -uroot -pdatabase| grep "mysqld is alive"
+mysqld is alive
 
 
+Run mysqladmin variables | grep socket 
+to get where the socket is located, and try setting up a connection like so:
+pymysql.connect(db='base', user='root', passwd='pwd', unix_socket="/tmp/mysql.sock")
+#still trying to see why ConnectionRefusedError
 
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker container exec -it flask_mysql_1 mysqladmin variables -P 3306 -uroot -pdatabase| grep socket
+
+
+Run mysqladmin variables | grep port
+ and verify that the port is 3306. 
+ If not, you can set the port manually like so:
+
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on 'localhost' ([Errno 99] Cannot assign requested address)")
+flask_app_1  | pymysql.err.OperationalError: (2003, "Can't connect to MySQL server on '127.0.0.1' ([Errno 111] Connection refused)")
+
+docker container exec -it flask_mysql_1 mysqladmin variables -P 3306 -uroot -pdatabase| grep socket
+ mysqlx_socket                                            | /var/run/mysqld/mysqlx.sock                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| performance_schema_max_socket_classes                    | 10                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| performance_schema_max_socket_instances                  | -1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| socket                                                   | /var/lib/mysql/mysql.sock                                                                                                                                                                  
+
+$ docker image prune -a
+
+mysql -u root -p -h 127.0.0.1
+
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker inspect flask_mysql_1 | grep Gateway
+
+docker network ls
+docker network inspect bridge
+
+docker container exec -it flask_mysql_1 mysqladmin variables -P 3306 -uroot -pdatabase| grep port
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker network inspect 57c8cebfb855 #<-- network ls output
+"Name": "flask_mysql_1",
+"IPv4Address": "192.168.16.2/20",
+
+ตอนนี้คือ แก้โค้ด สั่ง docker-compose up
+เสร็จแล้วถ้าจะแก้ก็ docker-compose down
+เมื่อกี๊ต้อง --build ด้วย เพราะว่าจะสั่งให้ mnt volume อันใหม่ที่อัพเดท
+แต่ตอนนี้ไม่ต้องแล้ว เพราะว่า app.py อัพเดทแล้ว
+ตอนนี้ก็แค่ docker-compose up มันก็เปลี่ยนทุกครั้งคือ create container ใหม่นะ
+
+
+mysql> CREATE USER 'monty'@'localhost' IDENTIFIED BY 'some_pass';
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'monty'@'localhost'
+    ->     WITH GRANT OPTION;
+
+
+mysql> CREATE USER 'pimp'@'flask_mysql_1' IDENTIFIED BY 'password';
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'pimp'@'flask_mysql_1'
+    ->     WITH GRANT OPTION;
+
+
+CREATE USER 'pimp'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON *.* TO 'pimp'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+
+CREATE USER 'root'@'%' IDENTIFIED BY 'database';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
