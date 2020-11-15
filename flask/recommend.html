@@ -1,0 +1,33 @@
+print("Showing recommendations for user: {}".format(user_id))
+print("====" * 9)
+print("Movies with high ratings from user")
+print("----" * 8)
+top_movies_user = (
+    movies_watched_by_user.sort_values(by="rating", ascending=False)
+    .head(5)
+    .movieId.values
+)
+movie_df_rows = movie_df[movie_df["movieId"].isin(top_movies_user)]
+for row in movie_df_rows.itertuples():
+    print(row.title, ":", row.genres)
+
+print("----" * 8)
+print("Top 10 movie recommendations")
+print("----" * 8)
+recommended_movies = movie_df[movie_df["movieId"].isin(recommended_movie_ids)]
+for row in recommended_movies.itertuples():
+    print(row.title, ":", row.genres)
+
+{% extends "layout.html" %}
+{% block content %}
+
+    <h1>Your Recommendations:</h1>
+
+    {% for yt in yt_results %}
+      <h2>{{ yt['recommendation'] }}</h2>
+      <p>
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/{{ yt['video_id'] }}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </p>
+    {% endfor %}
+
+{% endblock content %}

@@ -247,3 +247,17 @@ FLUSH PRIVILEGES;
 CREATE USER 'root'@'%' IDENTIFIED BY 'database';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
+
+
+https://github.com/keras-team/keras-io/blob/master/examples/structured_data/collaborative_filtering_movielens.py
+
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
+docker cp ../model_keras.py flask_flask_app_1:code/
+
+root@48ad086244a7:/code# 
+pip install pandas
+pip install tensorflow #only compatible upto python 3.8
+
+add all these for pip install in requirements.txt and rebuild using
+docker-compose up --build
+
