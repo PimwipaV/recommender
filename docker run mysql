@@ -249,59 +249,5 @@ GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 
-https://github.com/keras-team/keras-io/blob/master/examples/structured_data/collaborative_filtering_movielens.py
 
-pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask$ 
-docker cp ../model_keras.py flask_flask_app_1:code/
-
-root@48ad086244a7:/code# 
-pip install pandas
-pip install tensorflow #only compatible upto python 3.8
-
-add all these for pip install in requirements.txt and rebuild using
-docker-compose up --build
-
-numpy needed to downgrade to <1.19.0 now is at 1.18.5
-include 2 ports (flask and jupyter) in flask container but 
-jupyter doesn't work yet
-
-DannyIbo uses NMF model from scikit-learn and flask
-Siddartha uses keras but no flask
-
-
-docker build --tag python-flask:DannyIbo .
-
-pimpwhippa@pimpwhippa-Aspire-E5-473G:~/Works/recommender/flask/DannyIbo$ 
-docker run --name ibobox -d -it -v ~/data-test:/box python-flask:DannyIbo
-
-docker run -d -p 5002:5003 --name=ibobox -v $PWD:/app python-flask:DannyIbo
-
-สั่ง run ใหม่ แต่ไม่ได้ build ใหม่ ทำไมยังมี volume ติดมาให้ได้??
-เป็นครั้งแรกในชีวิตโปรแกรมเมอร์ที่รู้ว่าเคาะเอ็นเต้อคราวนี้ไปแล้วรู้ว่าผลมันจะได้ออกมาเป็นยังไง
-
-docker exec -it ibobox bash
-
-export FLASK_RUN_PORT=5002
-rm and run again, now doesn't work, address already in use
-    app.run(debug=True,host='0.0.0.0', port=5002)
-OSError: [Errno 98] Address already in use
-
-so have to stop docker engine
-container ID from docker inspect ibobox
-3c2cdd7efd5dcbce9185eeb0c13d26435f46bc6947682cd2b365fe7aa7a814bb
-
-you can change the port mapping by directly editing the hostconfig.json file 
-at /var/lib/docker/containers/[hash_of_the_container]/hostconfig.json
-
-/var/lib/docker/containers/3c2cdd7efd5dcbce9185eeb0c13d26435f46bc6947682cd2b365fe7aa7a814bb/hostconfig.json
-no permission to getinto docker ;P
-
-netstat -tulpn
-to see which services are using ports
-
- sudo lsof -i :5002
- COMMAND    PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
-docker-pr 4646 root    4u  IPv6  65066      0t0  TCP *:rfe (LISTEN)
-
-sudo kill -9 4646
 

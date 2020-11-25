@@ -4,6 +4,7 @@ LABEL maintainer="pimpwhippa<utrechtmay@gmail.com>"
 
 WORKDIR /box
 COPY . /box
+COPY templates templates
 RUN pip install -r requirements.txt
 CMD ["python","app.py"]
 #พอใส่ CMD ไปบรรทัดนึง แม่งไม่รันเลย รันไม่ขึ้น
