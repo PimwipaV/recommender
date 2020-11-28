@@ -192,7 +192,6 @@ def recommend_movies(
     return recom_movie_titles
 
 #here is another prediction by neural network model
-ratings = model.predict(user_movie_array).flatten()
 
 #here is the number_of_recommendations how many movies am I recommending 5 or 10
 #if i only input 1 movie can it also give 10 recommendations?

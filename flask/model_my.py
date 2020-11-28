@@ -56,3 +56,8 @@ if not movielens_dir.exists():
         print("Extracting all the files now...")
         zip.extractall(path=keras_datasets_path)
         print("Done!")
+
+ratings_file = movielens_dir / "ratings.csv"
+all_ratings = pd.read_csv(ratings_file)
+
+print(all_ratings)
