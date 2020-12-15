@@ -1,1 +1,8 @@
 Flask == 0.12
+fuzzywuzzy
+google-api-python-client
+flask_sqlalchemy
+pandas
+numpy
+google-auth-oauthlib
+pysqlite3

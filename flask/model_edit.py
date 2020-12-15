@@ -36,6 +36,34 @@ print(
     )
 )
 
+def prepare_embedding():
+    user_ids = raaah()["userId"].unique().tolist()
+
+    #user_ids = df["userId"].unique().tolist()
+    user2user_encoded = {x: i for i, x in enumerate(user_ids)}
+    userencoded2user = {i: x for i, x in enumerate(user_ids)}
+    movie_ids = raaah()["movieId"].unique().tolist()
+    movie2movie_encoded = {x: i for i, x in enumerate(movie_ids)}
+    movie_encoded2movie = {i: x for i, x in enumerate(movie_ids)}
+    raaah()["user"] = raaah()["userId"].map(user2user_encoded)
+    raaah()["movie"] = raaah()["movieId"].map(movie2movie_encoded)
+
+    num_users = len(user2user_encoded)
+    num_movies = len(movie_encoded2movie)
+    raaah()["rating"] = raaah()["rating"].values.astype(np.float32)
+# min and max ratings will be used to normalize the ratings later
+    min_rating = min(raaah()["rating"])
+    max_rating = max(raaah()["rating"])
+
+    print(
+    "Number of users: {}, Number of Movies: {}, Min rating: {}, Max rating: {}".format(
+        num_users, num_movies, min_rating, max_rating)
+    )
+    return num_users, num_movies, min_rating, max_rating
+
+
+
+
 """
 ## Prepare training and validation data
 """
@@ -51,6 +79,19 @@ x_train, x_val, y_train, y_val = (
     y[:train_indices],
     y[train_indices:],
 )
+
+def train_test_split(df["user"], df["movie"]):
+    df = df.sample(frac=1, random_state=42)
+    x = df[["user", "movie"]].values
+    # Normalize the targets between 0 and 1. Makes it easy to train.
+    y = df["rating"].apply(lambda x: (x - min_rating) / (max_rating - min_rating)).values
+    # Assuming training on 90% of the data and validating on 10%.
+    train_indices = int(0.9 * df.shape[0])
+    x_train, x_val, y_train, y_val = (x[:train_indices],
+                                      x[train_indices:],
+                                      y[:train_indices],
+                                      y[train_indices:])
+    return x_train, x_val, y_train, y_val
 
 """
 ## Create the model
@@ -130,6 +171,49 @@ plt.show()
 movie_df = pd.read_csv(movielens_dir / "movies.csv")
 
 #user keys in their fav movies
+
+# Let us get a user and see the top recommendations.
+    user_id = df.userId.sample(1).iloc[0]
+    movies_watched_by_user = df[df.userId == user_id]
+    movies_not_watched = movie_df[
+        ~movie_df["movieId"].isin(movies_watched_by_user.movieId.values)
+    ]["movieId"]
+    movies_not_watched = list(
+        set(movies_not_watched).intersection(set(movie2movie_encoded.keys()))
+    )
+    movies_not_watched = [[movie2movie_encoded.get(x)] for x in movies_not_watched]
+    
+    user_encoder = user2user_encoded.get(user_id)
+    user_movie_array = np.hstack(
+        ([[user_encoder]] * len(movies_not_watched), movies_not_watched)
+    )
+    ratings = model.predict(user_movie_array).flatten()
+    top_ratings_indices = ratings.argsort()[-10:][::-1]
+    recommended_movie_ids = [
+        movie_encoded2movie.get(movies_not_watched[x][0]) for x in top_ratings_indices
+    ]
+
+    print("Showing recommendations for user: {}".format(user_id))
+    print("====" * 9)
+    print("Movies with high ratings from user")
+    print("----" * 8)
+    top_movies_user = (
+        movies_watched_by_user.sort_values(by="rating", ascending=False)
+        .head(5)
+        .movieId.values
+    )
+    movie_df_rows = movie_df[movie_df["movieId"].isin(top_movies_user)]
+    for row in movie_df_rows.itertuples():
+        print(row.title, ":", row.genres)
+
+    print("----" * 8)
+    print("Top 10 movie recommendations")
+    print("----" * 8)
+    recommended_movies = movie_df[movie_df["movieId"].isin(recommended_movie_ids)]
+    for row in recommended_movies.itertuples():
+        print(row.title, ":", row.genres)
+
+    #return recommended_movies
 
 def process_user_input(user_input=None, all_ratings=None):
     '''Return a tuple: key(name of input field), value(user input string), df_guess(dataframe of pre-selected movie names), guesses(fuzzywuzzy of user input and df_guess as tuple(title, scoring and index))'''

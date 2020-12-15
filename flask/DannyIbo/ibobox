@@ -78,70 +78,127 @@ sudo kill -9 4646
  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
  พอไปที่ 5000 ได้ internal server error
 
- docker run --name=ibobox -p 5000:5002 -v ${PWD}:/box python-flask:DannyIbo
+docker run --name=ibobox -p 5000:5002 -v ${PWD}:/box python-flask:DannyIbo
  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
 
+docker run -it -v /home/dbfolder/:/db imagename
+docker run --name=ibobox2 -p 5001:5003 -v ${PWD}:/box python-flask:DannyIbo
 
-from .model_DannyIbo import (
-    create_engine_load_data,
-    setup_nmf,
-    process_user_input,
-    recommend_movies,
-    youtubeAPIkey,
-    get_yt_videos
-)
-
-YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
-
-engine, all_ratings = create_engine_load_data()
-NMF_Model, genre_movie_matrix, user_movie_id_ratings_matrix = setup_nmf(
-all_ratings=all_ratings,
-engine=engine,
-number_of_genres = 10
-)
+docker run -it --name=ibobox2 -v ${PWD}:/box python-flask:DannyIbo
 
 
-@app.route('/select')
-def select():
-    user_input = request.args.items()
+ลองวิธีใหม่ที่จะใช้ jupyter จากในคอนเทนเนอร์ที่มี flask
+ไปเอา docker image jupyter/tensorflow-notebook มา
+แล้วใน dockerfile ใส่ใน requirements.txt ว่า Flask
 
-    guesses_list = []
-    for ui in user_input:
-        if ui[1]:
-            guesses = process_user_input(user_input=ui, all_ratings=all_ratings)
-            guesses_list.append(guesses)
+docker build -t jupyter/tensorflow-notebook .
 
-    return render_template(
-        'select.html',
-        guesses_list=guesses_list,
-        user_input=user_input
-    )
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~$ 
+docker run --name=flask_jupyter -p 8888:8888 flask_jupyter:latest
 
-@app.route('/recommend')
-def recommend():
-    user_movie_title_list = request.args.values()
-    recom_movie_titles = recommend_movies(
-        all_ratings=all_ratings,
-        user_movie_title_list=user_movie_title_list,
-        user_movie_id_ratings_matrix=user_movie_id_ratings_matrix,
-        genre_movie_matrix=genre_movie_matrix,
-        NMF_Model=NMF_Model,
-        engine=engine,
-        number_of_recommendations=3
-    )
+บางทีก็ติดพาสเวิร์ด token บางทีก็ unable to connect, connection was reset
+http://127.0.0.1:8888/tree
 
-    yt_results = ""
-    if YOUTUBE_API_KEY:
-        youtube = youtubeAPIkey(YOUTUBE_API_KEY)
-        yt_results = get_yt_videos(youtube, titles=recom_movie_titles)
-    else:
-        yt_results = []
-        for r in recom_movie_titles:
-            dict = {}
-            dict['recommendation'] = r
-            yt_results.append(dict)
+http://f883b5e8bee9:8888/?token=9a7e1f42e944ab95e0335b43bd93d925d3211d97ebf162dc
 
-    return render_template(
-        'recommend.html',
-        yt_results=yt_results
-    )
+http://127.0.0.1:8888/?token=9a7e1f42e944ab95e0335b43bd93d925d3211d97ebf162dc
+[I 20:10:22.034 NotebookApp] 302 GET /?token=9a7e1f42e944ab95e0335b43bd93d925d3211d97ebf162dc (172.17.0.1) 2.07ms
+[I 20:10:31.942 NotebookApp] Writing notebook-signing key to /home/jovyan/.local/share/jupyter/notebook_secret
+
+อย่างงี้เข้าได้
+docker start flask_jupyter
+docker exec -it flask_jupyter jupyter notebook list
+
+หรือจะเข้าด้วย bash แล้วค่อยไป
+docker exec -it flask_jupyter bash
+่ีjupyter notebook list 
+ก็ได้
+
+http://0.0.0.0:8888/tree
+
+
+docker run --name=flask_jupyter -p 8888:8888 -v ${PWD}:/flask_jupyter flask_jupyter:latest
+โอ๊ย ทำได้แล้วน้ำตาจะไหล
+คือแค่ setup jupyter notebook ใน docker ทำไมมันวุ่นวายอย่างงี้วะ นี่ขนาดแค่ใช้ในเครื่องตัวเองนะ
+
+คือถ้าไปเปิดที่อื่นต้องดูเรื่อง container host port อีก แต่นี่คือเปิดด้วย http://127.0.0.1:8888/tree
+แล้วประเด็นคือ ต้องใส่ -v mount ตอนรันเพื่อที่จะเซฟได้
+ไม่งั้นทำๆไป เซฟไม่ได้ มันขึ้นเป็น read-only untrusted file
+แต่พอ mnt แล้วเลยมีที่ให้เซฟ ข้อมูลจะได้ persist อยู่ที่ host แต่ที่คอนเทนเนอร์เองก็ไม่มีอยู่ดีนะ
+
+
+กว่าจะเซ็ทอัพเสร็จ ส่วนdevelopment ของ deep learning เป็นหนึ่งใน fullstack ภาพรวม
+คือต่อดาต้าเข้ากับส่วนเดฟแล้วก็ทำการเทรน จากนั้นก็เอาไปดีพลอย 
+มีสามส่วน คือดาต้า เดฟกับเทรน และดีพลอย คือโปรดักชั่นใช้จริง
+คือเทคโนโลยีที่ใช้ได้แก่
+tensorflow, keras อยู่ในด็อกเก้ออิมเมจ
+jupyter notebook ก็อยู่ในด็อกเก้ออิมเมจ
+flask ใส่เพิ่มไปใน requirements.txt ตอนเขียน dockerfile
+docker
+sqlite install อยู่ที่ host เลย
+pimpwhippa@pimpwhippa-Aspire-E5-473G:~$ 
+sudo apt install sqlite3
+
+
+ที่ต้องลงเพิ่ม
+pip install googleapiclient
+pip install fuzzywuzzy
+pip install google-api-python-client
+pip install flask_sqlalchemy
+pip install pandas
+pip install google-auth-oauthlib
+
+301120
+
+sqlite3 บ่นว่าไม่มี table ชื่อ ratings
+ก็ยังไม่ได้ create table จริงๆ
+ให้สร้างตารางด้วยไฟล์เหล่านี้ โดยให้แต่ละตารางมีชื่อตามแต่ละไฟล์
+
+                table=os.path.splitext(os.path.basename(filename))[0]
+
+                sql = 'drop table if exists "{}"'.format(table)
+                db.execute(sql)
+
+                sql = 'create table "{table}" ( {cols} )'.format(
+                    table=table,
+                    cols=','.join('"{}"'.format(col) for col in cols))
+                db.execute(sql)
+
+
+SELECT "userId", ratings."movieId", movies.title, rating FROM ratings JOIN movies ON ratings."movieId" = movies."movieId";
+
+ก็เลยต้อง create table ก่อน?
+เข้าไปในกล่อง สั่ง sqlite3
+sqlite> .open recommender2.db
+sqlite> .tables
+links    movies   ratings  tags   
+sqlite> 
+
+มาต่อ flask ด้วยเลยงง
+จะเรียก sqlite จากใน docker container จะเรียกยังไงนะ สั่ง sqlite3 แล้วบอกว่า command not found
+
+docker run --name sqlitedanny -it -v /Works/recommender/flask/DannyIbo/:/box python-flask:DannyIbo
+
+ตอนแรกบ่นว่าหาไฟล์ไม่เจอ
+python: can't open file '/box/app.py': [Errno 2] No such file or directory
+เลยสั่ง mount ใหม่ แล้วสั่ง -it
+
+docker run -it --name=ibobox2 -v ${PWD}:/box python-flask:DannyIbo
+
+เลิกบ่น และปริ๊น all_ratings ออกมาได้ แต่พอไปเรียกจาก browser ก็ยังขึ้นว่า internal server error อยู่ดี
+แต่พอกลับมาดูในเทอร์มินัล ในคอนเทนเนอร์ คราวนี้ไม่มี GET error แล้ว คือจะมาบอกว่า
+all_ratings is not defined ไม่ได้แล้วเพราะว่าสั่งปริ๊นมาได้แล้ว
+
+อ้าวงงล่ะสิคราวนี้ flask ยังโชว์ให้ไม่ได้
+แต่ py ไม่มีปัญหาอะไรแล้ว
+
+ทำที่ ibobox แต่ไม่เห็นอะไรเลย เลยไปเปิดกล่อง jupyter tensorflow เพื่อไล่ดูว่าโค้ดบรรทัดไหนทำอะไร
+
+ตอนแรกที่มาเริ่ม ibobox3 เพื่อจะต่อ pysqlite3
+
+docker run -it --name=ibobox3 -v ${PWD}:/box python-flask:DannyIbo
+ทำมาจนรันได้ถึง user_input
+คราวนี้บ่นว่า ต้องมี active http request ถึงจะรันต่อได้
+
+เลยต้องมารันใหม่แบบต่อพอร์ท
+docker run --name=ibobox3 -p 5001:5003 -v ${PWD}:/box python-flask:DannyIbo

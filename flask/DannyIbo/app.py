@@ -1,7 +1,10 @@
 from flask import Flask, jsonify, make_response, render_template, request
 import os
-from .model_try import process_user_input
-
+from modelselect import create_engine_load_data, process_user_input
+#แค่เอา model_keras.py มาโหลดใส่ตรงนี้ได้ก็เสร็จเหมือนกัน
+#from .model_keras import ....? ไม่มีฟังก์ชั่นแล้วจะอิมพอร์ทอะไรมา?
+#หรือไม่ก็แค่ต่อ sqlite เข้าไปให้ได้ นอกนั้นก็เสร็จหมดแล้วของ dannyibo แต่ไม่ได้ใช้ keras, deep learning
+#แต่ใช้ sklearn NMF
 
 app = Flask(__name__)
 
@@ -10,24 +13,11 @@ app = Flask(__name__)
 def home():
     return render_template('input.html')
 
-@app.route('/select')
-def select():
-    user_input = request.args.items()
+engine, all_ratings = create_engine_load_data()
 
-    return render_template('select.html', user_input= user_input)
-
-import json
-def Table():
-    all_ratings = pd.read_csv(ratings_file)
-    all_ratings = all_ratings.to_json()
-    data = []
-    data = json.loads(all_ratings)
-    context = {'d':data}
-    return render('table.html', context)
-
-def score():
-    features = request.json['X']
-    return make_response(jsonify({'score': features}))
+#@app.route('/testsqlite')
+#def sqlite():
+    #self.write(all_ratings.to_dict())
 
 @app.route('/select')
 def select():
