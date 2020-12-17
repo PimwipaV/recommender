@@ -225,3 +225,33 @@ def create_engine_load_data():
     all_ratings = pd.read_sql(query, engine)
 
     return engine, all_ratings
+
+
+# Get theindexes, where the movie ids are in the NMF
+    movie_index_list = []
+    for id_ in movie_id_list:
+        index = list(user_movie_id_ratings_matrix.columns).index(id_)
+        movie_index_list.append(index)
+
+    # Setup the ratings that the user did by selecting titles and prepare prediction
+    user_rating = np.zeros(user_movie_id_ratings_matrix.shape[1])
+    for i in movie_index_list:
+        user_rating[i] = 5
+    user_rating = user_rating.reshape(-1,1)
+    user_rating = user_rating.T
+
+
+    reddit_data = []
+
+    for submission in reddit.subreddit('worldnews').controversial(limit=10):
+        reddit_data.append(submission.title)
+
+    return render_template("show_reddit.html", data=reddit_data)
+
+    movie_id_list = []
+    for mt in user_movie_title_list:
+        movie_id = all_ratings[all_ratings['title'] == mt]['movieId'].unique()[0]
+        movie_id_list.append(movie_id)
+
+    print(movie_id_list)
+    return movie_id_list

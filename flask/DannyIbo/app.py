@@ -1,10 +1,6 @@
 from flask import Flask, jsonify, make_response, render_template, request
 import os
 from modelselect import create_engine_load_data, process_user_input
-#แค่เอา model_keras.py มาโหลดใส่ตรงนี้ได้ก็เสร็จเหมือนกัน
-#from .model_keras import ....? ไม่มีฟังก์ชั่นแล้วจะอิมพอร์ทอะไรมา?
-#หรือไม่ก็แค่ต่อ sqlite เข้าไปให้ได้ นอกนั้นก็เสร็จหมดแล้วของ dannyibo แต่ไม่ได้ใช้ keras, deep learning
-#แต่ใช้ sklearn NMF
 
 app = Flask(__name__)
 
@@ -14,10 +10,6 @@ def home():
     return render_template('input.html')
 
 engine, all_ratings = create_engine_load_data()
-
-#@app.route('/testsqlite')
-#def sqlite():
-    #self.write(all_ratings.to_dict())
 
 @app.route('/select')
 def select():
@@ -33,6 +25,24 @@ def select():
         'select.html',
         guesses_list=guesses_list,
         user_input=user_input)
+
+
+@app.route('/recommend')
+def recommend():
+#ตอนนี้นึกว่า method = ['GET', 'POST] คือสิ่งที่ทำให้มันแตกต่างระหว่างเสนอ guesses ไป
+#กับตอนที่ user เลือกกลับมา แต่ไม่เห็นมีตรงไหนเป็นแบบนี้เลยหนิ แล้วมันเอาการเลือกนั้นมายังไง
+    user_movie_title_list = request.args.values()
+    #chosen_index = user_movie_title_list.index()
+    movie_id_list = []
+    for mt in user_movie_title_list:
+        if mt[1]:
+            #movieindex = get_chosen_index(user_movie_title_list=mt, all_ratings=all_ratings)
+            movie_id = all_ratings[all_ratings['title'] == mt]['movieId'].unique()[0]
+            movie_id_list.append(movie_id)
+
+    return render_template('chosenindex.html', data=movie_id_list)
+    #return render_template('chosenindex.html', data=chosen_index)
+
 
 if __name__ == '__main__':
     #app.run(port=5000, debug=False)
