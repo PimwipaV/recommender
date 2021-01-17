@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+
+    <form action="/recommend">
+    <h1>Please select your movies from the results</h1>
+
+    {% for guess in guesses_list %}
+      <p>Your movie search for "{{ guess[1] }}"</p>
+      <p><select name="{{ guess[0] }}" size="5">
+      {% for element in guess[3] %}
+        <option value="{{ element[0] }}">{{ element[0] }}</option>
+      {% endfor %}
+      </select></p>
+    {% endfor %}
+    <input type="submit" value="Get recommendations">
+    </form>
+
+{% endblock content %}
