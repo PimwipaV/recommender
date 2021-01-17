@@ -255,3 +255,6 @@ def create_engine_load_data():
 
     print(movie_id_list)
     return movie_id_list
+
+#ตอนนี้นึกว่า method = ['GET', 'POST] คือสิ่งที่ทำให้มันแตกต่างระหว่างเสนอ guesses ไป
+#กับตอนที่ user เลือกกลับมา แต่ไม่เห็นมีตรงไหนเป็นแบบนี้เลยหนิ แล้วมันเอาการเลือกนั้นมายังไง

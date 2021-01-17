@@ -148,6 +148,16 @@ pip install flask_sqlalchemy
 pip install pandas
 pip install google-auth-oauthlib
 
+Flask == 0.12
+fuzzywuzzy
+google-api-python-client
+flask_sqlalchemy
+pandas
+numpy
+google-auth-oauthlib
+pysqlite3
+tensorflow
+
 301120
 
 sqlite3 บ่นว่าไม่มี table ชื่อ ratings
@@ -202,3 +212,23 @@ docker run -it --name=ibobox3 -v ${PWD}:/box python-flask:DannyIbo
 
 เลยต้องมารันใหม่แบบต่อพอร์ท
 docker run --name=ibobox3 -p 5001:5003 -v ${PWD}:/box python-flask:DannyIbo
+
+docker rm ibobox
+rm recommender3.db
+แล้วสั่งรันใหม่
+docker run --name=ibobox3 -p 5001:5003 -v ${PWD}:/box python-flask:DannyIbo
+
+
+ลง tensorflow เพิ่มในกล่อง ibobox3 ไม่ได้ ไม่รู้ทำไม
+แม่งบอกว่า ไม่มีเวอร์ชั่นนี้
+
+ส่วนลอง 
+docker run --name=flask_tensorflow2 -p 5001:5003 -v ${PWD}:/flask_jupyter python-flask:DannyIbo
+
+ก็รันได้ แต่ว่าพอไปเบราเซอร์แล้ว เปิดไม่ออกสักอัน?
+/usr/local/lib/python3.9/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+  warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+ * Running on http://0.0.0.0:5002/ (Press CTRL+C to quit)
+
+เลยงง ตอนนี้มาลองบิ้วใหม่โดยใช้ tensorflow เป็น base image
+docker build -t tensorflow-flask:pimpwhippa .

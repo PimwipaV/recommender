@@ -1,6 +1,10 @@
 from flask import Flask, jsonify, make_response, render_template, request
 import os
-from modelselect import create_engine_load_data, process_user_input
+from modelselect import (
+    create_engine_load_data, 
+    process_user_input,
+    recommend_movies
+)
 
 app = Flask(__name__)
 
@@ -10,6 +14,11 @@ def home():
     return render_template('input.html')
 
 engine, all_ratings = create_engine_load_data()
+NMF_Model, genre_movie_matrix, user_movie_id_ratings_matrix = setup_nmf(
+all_ratings=all_ratings,
+engine=engine,
+number_of_genres = 10
+)
 
 @app.route('/select')
 def select():
@@ -29,19 +38,18 @@ def select():
 
 @app.route('/recommend')
 def recommend():
-#ตอนนี้นึกว่า method = ['GET', 'POST] คือสิ่งที่ทำให้มันแตกต่างระหว่างเสนอ guesses ไป
-#กับตอนที่ user เลือกกลับมา แต่ไม่เห็นมีตรงไหนเป็นแบบนี้เลยหนิ แล้วมันเอาการเลือกนั้นมายังไง
-    user_movie_title_list = request.args.values()
-    #chosen_index = user_movie_title_list.index()
-    movie_id_list = []
-    for mt in user_movie_title_list:
-        if mt[1]:
-            #movieindex = get_chosen_index(user_movie_title_list=mt, all_ratings=all_ratings)
-            movie_id = all_ratings[all_ratings['title'] == mt]['movieId'].unique()[0]
-            movie_id_list.append(movie_id)
 
-    return render_template('chosenindex.html', data=movie_id_list)
-    #return render_template('chosenindex.html', data=chosen_index)
+    user_movie_title_list = request.args.values()
+
+    recom_movie_titles = recommend_movies(
+        all_ratings=all_ratings,
+        user_movie_title_list=user_movie_title_list,
+        engine=engine,
+        number_of_recommendations=10
+    )
+
+    #return render_template('chosenindex.html', data=watched_movie_id_list)
+    return render_template('chosenindex.html', data=recom_movie_titles)
 
 
 if __name__ == '__main__':

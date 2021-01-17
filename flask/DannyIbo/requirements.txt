@@ -6,3 +6,4 @@ pandas
 numpy
 google-auth-oauthlib
 pysqlite3
+tensorflow == 2.4

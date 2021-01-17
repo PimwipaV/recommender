@@ -36,6 +36,9 @@ def recommend():
 
     ratings_file = movielens_dir / "ratings.csv"
     df = pd.read_csv(ratings_file)
+    all_ratings = df
+    
+    return all_ratings
 
     """
     First, need to perform some preprocessing to encode users and movies as integer indices.
@@ -127,7 +130,7 @@ def recommend():
     )
     ratings = model.predict(user_movie_array).flatten()
 
-    return model
+    #return model
     """
     ## Train the model based on the data split
     """
