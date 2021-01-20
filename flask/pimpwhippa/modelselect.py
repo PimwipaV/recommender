@@ -161,7 +161,8 @@ def recommend_movies(
         )
     ratings = model.predict(that).flatten()
 
-    top_ratings_indices = ratings.argsort()[-10:][::-1]
-    recom_movie_titles = movies_not_watched.loc[movies_not_watched['index'].isin(top_ratings_indices)]
-    return recom_movie_titles
+    movies_not_watched.loc[:,'prediction'] = ratings
+    highest_score = ratings[ratings.argsort()[-10:]][::-1] #เอาค่ามาถึงจะถูก
 
+    recom_movie_titles = movies_not_watched.loc[movies_not_watched.loc[:,'prediction'].isin(highest_score)] ##wuuuhuuuuwww
+    return recom_movie_titles

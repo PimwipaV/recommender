@@ -231,4 +231,8 @@ docker run --name=flask_tensorflow2 -p 5001:5003 -v ${PWD}:/flask_jupyter python
  * Running on http://0.0.0.0:5002/ (Press CTRL+C to quit)
 
 เลยงง ตอนนี้มาลองบิ้วใหม่โดยใช้ tensorflow เป็น base image
-docker build -t tensorflow-flask:pimpwhippa .
+docker build -t tensorflow-flask:cmd .
+
+docker run --name=tensorflow-flask5 -p 5002:5002 -v ${PWD}:/box tensorflow-flask:cmd
+
+แต่ยังให้แสดงผลเป็น dataframe ไม่ได้ render template เนี่ย

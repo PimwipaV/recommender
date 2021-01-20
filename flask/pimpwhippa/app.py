@@ -43,10 +43,13 @@ def recommend():
         number_of_recommendations=10
     )
 
-    #return render_template('chosenindex.html', data=watched_movie_id_list)
-    return render_template('chosenindex.html', data=recom_movie_titles)
+    recom_movie_titles = recom_movie_titles.to_html()
 
+    return render_template('recom_titles.html',
+    tables=[recom_movie_titles])
+    
+    #return render_template('chosenindex.html', data=watched_movie_id_list)
+    #return render_template('recom_titles.html', data=recom_movie_titles.to_html())
 
 if __name__ == '__main__':
-    #app.run(port=5000, debug=False)
-    app.run(debug=False,host='0.0.0.0', port=5002)
+        app.run(debug=False,host='0.0.0.0', port=5002)
