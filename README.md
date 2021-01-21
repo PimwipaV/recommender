@@ -1,4 +1,5 @@
-# recommender
+# drafts of my recommender
 containerized recommendation engine
-
-connecting MySQL with Flask with a recommendation engine inside
+flask/pimpwhippa
+docker build
+docker run
