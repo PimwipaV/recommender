@@ -236,3 +236,11 @@ docker build -t tensorflow-flask:cmd .
 docker run --name=tensorflow-flask5 -p 5002:5002 -v ${PWD}:/box tensorflow-flask:cmd
 
 แต่ยังให้แสดงผลเป็น dataframe ไม่ได้ render template เนี่ย
+
+ต่อพอร์ทไหม
+จะรันดูเพื่อจะรู้ว่าในกล่องมี tensorflow ไหม ก็ต้องสั่ง python app.py
+ซึ่งก็ต้องสั่งรันนั่นเอง
+
+change from port=5002 to port=port trying to solve unable to connect port within 60 seconds
+check if it works locally and in how long
+docker run --name=flask-tf-port -p 5000:5000 -v ${PWD}:/box flask-tf:latest
