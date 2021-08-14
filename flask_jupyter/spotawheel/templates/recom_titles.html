@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+
+    <h1>I guess you should watch:</h1>
+
+    {% for table in tables %}
+                {{ table|safe }}
+    {% endfor %}
+
+{% endblock content %}
