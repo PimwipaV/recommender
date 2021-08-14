@@ -18,16 +18,17 @@ df["Transmissiontype"]= df["Transmission"].astype('category')
 df["Transmissiontypecat"] = df["Transmissiontype"].cat.codes
 df["Brandtype"]= df["Brand"].astype('category')
 df["Brandtypecat"] = df["Brandtype"].cat.codes
-st.write(df)
+#st.write(df)
 
+# this section takes user input as x_test
 brandchoose = st.selectbox(
     'What brand is your car?',
      df['Brand'].unique())
+#have to map it back to brandtypecat
 b = dict(enumerate(df["Brandtype"].cat.categories))
 reversed_b = dict(map(reversed, b.items()))
 brand = reversed_b[brandchoose]
 
-#have to map it back to brandtypecat
 transmissionchoose = st.selectbox(
     'Is it manual or automatic?',
      df['Transmissiontype'].unique())
@@ -48,9 +49,6 @@ fuelchoose = st.selectbox(
 f = dict(enumerate(df["Fueltype"].cat.categories))
 reversed_f = dict(map(reversed, f.items()))
 fuel = reversed_f[fuelchoose]
-
-#fuel = f map # has to return 3 if answered Petrol
-
 engine = st.text_input("How big is the engine?", 1500)
 power = st.text_input("How much power it has?", 100)
 seats = st.text_input("How many seats has it?", 5)
